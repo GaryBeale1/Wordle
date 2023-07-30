@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Wordle</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+	<div class="container">
+		<div class="reset">
+			<i class="bi bi-repeat"></i>
+		</div>
+
+		<div class="inputTableDiv">
+			<div class="inputTableWrapper">
+				<table id="inputTable">
+					<tr>
+						<td>
+							<label>Word</label>
+						</td>
+						<td>
+							<input id="wordChoice" type="text" />  
+						</td>  
+					</tr>
+
+					<tr>
+						<td>
+							<label>Number of Chances</label>
+						</td>
+						<td>
+							<input id="chanceLength" type="number" />
+						</td>
+					</tr>
+
+					<tr>
+						<td></td>
+						<td>
+							<button onclick="saveWord()">Save</button>
+						</td>
+					</tr>
+				</table>
+			</div>		
+
+			<table id="gameTable">
+			</table>
+
+			<h2 id="solvedText">You solved the puzzle! The word was '<span id="finalWord"></span>'</h2>
+			<h2 id="failedText">You were unable to guess the word. Better luck next time!</h2>
+		</div>
+	</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.6.1.min.js" 
+    integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+    crossorigin="anonymous"> 
+</script>
+<script type="text/javascript">
+
+	var word;
+    var wordLetters = [];
+	var chances = 0;
+
+    function saveWord() {
+		$('#gameTable').empty();
+
+		if (!$('#wordChoice').val().trim() || $('#chanceLength').val() < 1) {
+			alert('Please ensure you have chosen a word and how many guesses the game should have before continuing.');
+			return;
+		}
+
+        word = $('#wordChoice').val().toUpperCase().trim();
+		wordLetters = word.split('');
+
+		chances = $('#chanceLength').val();
+
+		for (var row = 0; row < parseInt(chances); row++)
+		{
+			var inputs = '';
+			for (var col = 0; col < wordLetters.length; col++)
+			{
+				if (row == 0) {
+					inputs += `<td><input type='text' class='gameInput' data-col=${col} data-row=${row} maxlength=1 /></td>`;
+				} else {
+					inputs += `<td><input type='text' class='gameInput' data-col=${col} data-row=${row} maxlength=1 disabled /></td>`;
+				}
+				
+			}
+			var rowHtml = `<tr class='inputRow${row}'>${inputs}</tr>`;
+			$('#gameTable').append(rowHtml);
+		}
+
+		$('#inputTable').hide();	
+		$('.reset').show();
+		$(`.gameInput[data-col='0'][data-row='0']`).focus();
+    }
+
+	function processRow(rowNum) {
+		var correctCount = 0;
+		var modList = [...wordLetters];
+		var matchList = [];
+
+		for (var col = 0; col < wordLetters.length; col++) {
+			var currentInput = $(`.gameInput[data-col='${col}'][data-row='${rowNum}']`);			
+
+			if (currentInput.val() == wordLetters[col] && modList.includes(currentInput.val())) {
+				
+				currentInput.addClass('correct');
+				correctCount++;
+				
+				modList.splice(modList.indexOf(currentInput.val()), 1);
+				matchList.push(col);
+			} 
+		}
+
+		for (var col = 0; col < wordLetters.length; col++) {
+			var currentInput = $(`.gameInput[data-col='${col}'][data-row='${rowNum}']`);			
+
+			if (wordLetters.includes(currentInput.val()) && modList.includes(currentInput.val()) && !matchList.includes(col)) {
+
+				currentInput.addClass('include');
+
+				modList.splice(modList.indexOf(currentInput.val()), 1);
+				matchList.push(currentInput.val());
+
+			} else if (!matchList.includes(col)) {
+				currentInput.addClass('incorrect');
+			}
+		}		
+
+		if (correctCount == wordLetters.length) {
+			$('#finalWord').text(word);
+			$('#solvedText').show();
+			$('.gameInput').prop('disabled', true);
+		}
+
+		if (rowNum == chances) {
+			$('#failedText').show();
+		} else if (correctCount != wordLetters.length) {
+			$(`.gameInput[data-row='${rowNum}']`).prop('disabled', true);
+			$(`.gameInput[data-row='${rowNum+1}']`).prop('disabled', false);
+			$(`.gameInput[data-col='0'][data-row='${rowNum+1}']`).focus();
+		}
+	}
+
+	$('#gameTable').on('keypress', '.gameInput', function(e) {
+		if(e.which == 13) {
+
+			var row = $(this).data('row');
+			var valid = true;
+			$(`.gameInput[data-row='${row}']`).each(function () {
+				if (!$(this).val()) {
+					valid = false;
+				}
+			});
+
+			if (valid) {
+				processRow(row);
+			}			
+		}
+	});
+
+	$('#gameTable').on('keyup', '.gameInput', function () {
+		var lastCol = wordLetters.length - 1;
+
+		if (!$(this).hasClass(`col${lastCol}Input`) && $(this).val().trim()) {
+			var newCol = $(this).data('col') + 1;
+			var row = $(this).data('row');
+			$(`.gameInput[data-col='${newCol}'][data-row='${row}']`).focus();
+		}
+
+		$(this).val($(this).val().trim().toUpperCase());
+	});
+
+	$('.reset').on('click', function () {
+		$('#gameTable').empty();
+		$('.reset').hide();
+		$('#wordChoice').val('').focus();
+		$('#inputTable').show();
+	});
+
+	$('#chanceLength').on('change', function () {
+		if ($(this).val() < 0) {
+			$(this).val(0);
+		}
+	});
+	
+	$('#chanceLength, #wordChoice').on('keypress', function(e) { 
+		if(e.which == 13 && $('#wordChoice').val().trim() && $('#chanceLength').val() > 0) {
+			saveWord();
+		}
+	});
+
+</script>
+<style>
+	.correct {
+		background-color: #6aaa64;
+		color: #ffffff;
+	}
+
+	.include {
+		background-color: #c9b458;
+		color: #ffffff;
+	}
+
+	.incorrect {
+		background-color: #787c7e;
+		color: #ffffff;
+	}
+
+	#solvedText, #failedText {
+		display: none;
+	}
+
+	.inputTableDiv {
+		display: flex;
+		justify-content: center;
+		height: 100vh;
+		align-items: center;
+		flex-direction: column;
+	}
+	
+	.gameInput {
+		width: 3ch;
+		text-align: center;
+		font-size: 60px;
+		font-weight: 800;
+	}
+
+	.reset {
+		position: fixed;
+		top: 0px;
+		right: 50px;
+		font-size: 50px;
+		display: none;
+		cursor: pointer;
+	}
+</style>
+
+</html>
