@@ -132,8 +132,9 @@
 			$('.gameInput').prop('disabled', true);
 		}
 
-		if (rowNum == chances) {
+		if (rowNum + 1 == chances) {
 			$('#failedText').show();
+			$('.gameInput').prop('disabled', true);
 		} else if (correctCount != wordLetters.length) {
 			$(`.gameInput[data-row='${rowNum}']`).prop('disabled', true);
 			$(`.gameInput[data-row='${rowNum+1}']`).prop('disabled', false);
@@ -156,6 +157,12 @@
 				processRow(row);
 			}			
 		}
+	})
+	.on('keyup', '.gameinput', function(e) {
+		if (e.which == 8 && $(this).data('col') != 0) {
+			var row = $(this).data('row');
+			$(`.gameInput[data-col='${$(this).data('col') - 1}'][data-row='${row}']`).focus();
+		}
 	});
 
 	$('#gameTable').on('keyup', '.gameInput', function () {
@@ -172,6 +179,7 @@
 
 	$('.reset').on('click', function () {
 		$('#gameTable').empty();
+		$('#solvedText, #failedText').hide();
 		$('.reset').hide();
 		$('#wordChoice').val('').focus();
 		$('#inputTable').show();
