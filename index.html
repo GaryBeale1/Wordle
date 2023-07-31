@@ -156,25 +156,34 @@
 			if (valid) {
 				processRow(row);
 			}			
-		}
-	})
-	.on('keyup', '.gameinput', function(e) {
-		if (e.which == 8 && $(this).data('col') != 0) {
-			var row = $(this).data('row');
-			$(`.gameInput[data-col='${$(this).data('col') - 1}'][data-row='${row}']`).focus();
+		} else {
+			e.preventDefault();
+
+			var lastCol = wordLetters.length - 1;
+
+			$(this).val(String.fromCharCode(e.keyCode).toUpperCase());
+
+			if (!$(this).hasClass(`col${lastCol}Input`) && $(this).val().trim()) {
+				var newCol = $(this).data('col') + 1;
+				var row = $(this).data('row');
+				$(`.gameInput[data-col='${newCol}'][data-row='${row}']`).focus();
+			}
+
+			$(this).val($(this).val().trim());
 		}
 	});
 
-	$('#gameTable').on('keyup', '.gameInput', function () {
-		var lastCol = wordLetters.length - 1;
+	$('#gameTable').on('keydown', function(e) {
+		// if (e.which == 8 && $(this).data('col') != 0) {
+		// 	var row = $(this).data('row');
+		// 	$(`.gameInput[data-col='${$(this).data('col') - 1}'][data-row='${row}']`).focus();
+		// }
 
-		if (!$(this).hasClass(`col${lastCol}Input`) && $(this).val().trim()) {
-			var newCol = $(this).data('col') + 1;
-			var row = $(this).data('row');
-			$(`.gameInput[data-col='${newCol}'][data-row='${row}']`).focus();
+		if (e.keyCode == 8) {
+			e.preventDefault();
+			$(':focus').val('');
+			$(`.gameInput[data-col='${$(':focus').data('col') - 1}'][data-row='${$(':focus').data('row')}']`).focus();
 		}
-
-		$(this).val($(this).val().trim().toUpperCase());
 	});
 
 	$('.reset').on('click', function () {
@@ -218,6 +227,10 @@
 		display: none;
 	}
 
+	#wordChoice {
+		text-transform: uppercase;
+	}
+
 	.inputTableDiv {
 		display: flex;
 		justify-content: center;
@@ -231,6 +244,7 @@
 		text-align: center;
 		font-size: 60px;
 		font-weight: 800;
+		text-transform: uppercase;
 	}
 
 	.reset {
